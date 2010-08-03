@@ -3,9 +3,9 @@
 abstract class Hive_Model {
 
 	/**
-	 * @var  Hive_Meta  meta instance
+	 * @var  array  meta instances: name => meta object, ...
 	 */
-	public static $meta;
+	public static $meta = array();
 
 	public static function factory($name, array $values = NULL)
 	{
@@ -52,6 +52,11 @@ abstract class Hive_Model {
 	protected $__init = FALSE;
 
 	/**
+	 * @var  string  model class name
+	 */
+	protected $__class = '';
+
+	/**
 	 * Initializes model fields and loads meta data.
 	 *
 	 *     $model = new Model_Foo;
@@ -66,36 +71,17 @@ abstract class Hive_Model {
 			// To work around the problem, __construct is called twice.
 			// The second time it is called, all "changed" data is loaded.
 			$this->loaded(TRUE);
-
-			// Initialization is now complete
-			$this->__init = TRUE;
 		}
 		else
 		{
-			// Restore meta object
-			$this->__wakeup();
+			// Set the class name for later use
+			$this->__class = strtolower(get_class($this));
 
 			// Reset the object
 			$this->reset();
 		}
-	}
 
-	/**
-	 * Magic method, called when the model is unserialized. Also called by
-	 * __construct to load the meta object.
-	 *
-	 * @return  void
-	 * @uses    Hive::init
-	 */
-	public function __wakeup()
-	{
-		if ( ! static::$meta)
-		{
-			// Meta has not yet been loaded for this model
-			static::$meta = static::init();
-		}
-
-		// Initialize has been done
+		// Initialization is now complete
 		$this->__init = TRUE;
 	}
 
@@ -115,7 +101,13 @@ abstract class Hive_Model {
 	 */
 	public function __get($name)
 	{
-		if ( ! isset(static::$meta->fields[$name]))
+		if (isset($this->meta()->aliases[$name]))
+		{
+			// Call aliases, passing the model through
+			return $this->meta()->aliases[$name]($this);
+		}
+
+		if ( ! isset($this->meta()->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -131,7 +123,7 @@ abstract class Hive_Model {
 		{
 			if ( ! $this->loaded() AND $this->prepared())
 			{
-				$this->load();
+				$this->read();
 			}
 
 			return $this->__data[$name];
@@ -163,7 +155,7 @@ abstract class Hive_Model {
 			$this->__init = 0x3adb4;
 		}
 
-		if ( ! isset(static::$meta->fields[$name]))
+		if ( ! isset($this->meta()->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -171,7 +163,7 @@ abstract class Hive_Model {
 			));
 		}
 
-		$field = static::$meta->fields[$name];
+		$field = $this->meta()->fields[$name];
 
 		$value = $field->value($value);
 
@@ -211,7 +203,7 @@ abstract class Hive_Model {
 	 */
 	public function __unset($name)
 	{
-		if ( ! isset(static::$meta->fields[$name]))
+		if ( ! isset($this->meta()->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -222,7 +214,8 @@ abstract class Hive_Model {
 		// Remove changed value
 		unset($this->__changed[$name]);
 
-		$field = static::$meta->fields[$name];
+		// Import the field
+		$field = $this->meta()->fields[$name];
 
 		// Reset the field value to the default value
 		$this->__data[$name] = $field->value($field->default);
@@ -238,7 +231,10 @@ abstract class Hive_Model {
 	 */
 	public function __isset($name)
 	{
-		return isset(static::$meta->fields[$name]);
+		$meta = $this->meta();
+
+		return isset($meta->fields[$name])
+			OR isset($meta->aliases[$name]);
 	}
 
 	/**
@@ -255,6 +251,25 @@ abstract class Hive_Model {
 	}
 
 	/**
+	 * Get meta data object.
+	 *
+	 *     $meta = $model->meta();
+	 *
+	 * @return  Hive_Meta
+	 * @uses    Hive::init
+	 */
+	public function meta()
+	{
+		if ( ! isset(Hive::$meta[$this->__class]))
+		{
+			// Meta has not yet been created
+			Hive::$meta[$this->__class] = static::init();
+		}
+
+		return Hive::$meta[$this->__class];
+	}
+
+	/**
 	 * Get and set the model's "prepared" state. If a model is prepared, it can
 	 * be loaded.
 	 *
@@ -262,19 +277,23 @@ abstract class Hive_Model {
 	 *     $model->prepared(TRUE);
 	 *
 	 *     // Get the prepared state
-	 *     if ($model->prepared()) $model->load();
+	 *     if ($model->prepared()) $model->read();
 	 *
 	 * @param   boolean   new state
-	 * @return  boolean
+	 * @return  boolean  when getting
+	 * @return  $this    when setting
 	 */
 	public function prepared($state = NULL)
 	{
-		if ($state !== NULL)
+		if ($state === NULL)
 		{
-			$this->__prepared = (bool) $state;
+			return $this->__prepared;
 		}
 
-		return $this->__prepared;
+		// Change state
+		$this->__prepared = (bool) $state;
+
+		return $this;
 	}
 
 	/**
@@ -287,26 +306,30 @@ abstract class Hive_Model {
 	 * [!!] Changing the loaded state to `TRUE` will cause all changed data
 	 * to be merged into the currently loaded data.
 	 *
-	 * @param   boolean   new state
-	 * @return  boolean
+	 * @param   boolean  new state
+	 * @return  boolean  when getting
+	 * @return  $this    when setting
 	 */
 	public function loaded($state = NULL)
 	{
-		if ($state !== NULL)
+		if ($state === NULL)
 		{
-			$this->__loaded = (bool) $state;
-
-			if ($this->__loaded)
-			{
-				// Move changes into data
-				$this->__data = array_merge($this->__data, $this->__changed);
-
-				// Clear all changes
-				$this->__changed = array();
-			}
+			return $this->__loaded;
 		}
 
-		return $this->__loaded;
+		// Change state
+		$this->__loaded = (bool) $state;
+
+		if ($this->__loaded)
+		{
+			// Move changes into data
+			$this->__data = array_merge($this->__data, $this->__changed);
+
+			// Clear all changes
+			$this->__changed = array();
+		}
+
+		return $this;
 	}
 
 	/**
@@ -335,7 +358,7 @@ abstract class Hive_Model {
 	 */
 	public function reset()
 	{
-		$fields = array_keys(static::$meta->fields);
+		$fields = array_keys($this->meta()->fields);
 
 		foreach ($fields as $name)
 		{
@@ -344,8 +367,9 @@ abstract class Hive_Model {
 		}
 
 		// Reset the model state
-		$this->prepared(FALSE);
-		$this->loaded(FALSE);
+		$this
+			->prepared(FALSE)
+			->loaded(FALSE);
 
 		return $this;
 	}
@@ -361,7 +385,7 @@ abstract class Hive_Model {
 	 */
 	public function values($values, $clean = FALSE)
 	{
-		$values = array_intersect_key((array) $values, static::$meta->fields);
+		$values = array_intersect_key((array) $values, $this->meta()->fields);
 
 		if ($clean)
 		{
@@ -385,18 +409,20 @@ abstract class Hive_Model {
 	 * Get the current model data as an array. Changed values are combined with
 	 * loaded values.
 	 *
-	 *     $data = $model->as_array();
+	 *     $array = $model->as_array();
 	 *
 	 * @return  array
 	 */
 	public function as_array()
 	{
-		$fields = array_keys(static::$meta->fields);
+		// Get a list of model fields
+		$fields = array_keys($this->meta()->fields);
 
 		$array = array();
 
 		foreach ($fields as $name)
 		{
+			// Add every field value to the array
 			$array[$name] = $this->$name;
 		}
 
@@ -404,13 +430,31 @@ abstract class Hive_Model {
 	}
 
 	/**
-	 * Load model data from the database.
+	 * Get the current model data as a JSON string.
 	 *
-	 *     // Load model from database
-	 *     $model->load();
+	 *     $json = $model->as_json();
 	 *
-	 *     // Load all records as models
-	 *     $models = $model->load(NULL, FALSE);
+	 * @return  string
+	 * @uses    Hive::as_array
+	 */
+	public function as_json()
+	{
+		return json_encode($this->as_array());
+	}
+
+	public function create(Database_Query_Builder_Insert $query = NULL)
+	{
+
+	}
+
+	/**
+	 * Read model data from the database.
+	 *
+	 *     // Read model from database
+	 *     $model->read();
+	 *
+	 *     // Read all records as models
+	 *     $models = $model->read(NULL, FALSE);
 	 *
 	 * @param   object  SELECT query
 	 * @param   mixed   number of records to fetch, FALSE for all
@@ -418,19 +462,21 @@ abstract class Hive_Model {
 	 * @return  Database_Result  when loading multiple objects
 	 * @uses    Hive::query_select
 	 */
-	public function load(Database_Query_Builder_Select $query = NULL, $limit = 1)
+	public function read(Database_Query_Builder_Select $query = NULL, $limit = 1)
 	{
-		$query = $this->query_select($query);
+		// Apply modeling to the query
+		$query = $this->query_select($query, $limit);
 
-		$meta = static::$meta;
+		// Import meta data
+		$meta = $this->meta();
 
 		if ( ! $limit OR $limit > 1)
 		{
-			return $query
-				->as_object(get_class($this))
-				->execute($meta->db);
+			// Return an iterator of results using this class
+			return $query->execute($meta->db);
 		}
 
+		// Load a single row as an object
 		$result = $query
 			->as_object(FALSE)
 			->execute($meta->db)
@@ -438,40 +484,84 @@ abstract class Hive_Model {
 
 		if ($result)
 		{
+			// A result has been found, load the values
 			$this
 				->values($result)
 				->loaded(TRUE);
 		}
 		else
 		{
+			// No result was found, this object is not properly prepared
 			$this->prepared(FALSE);
 		}
 
 		return $this;
 	}
 
+	public function update(Database_Query_Builder_Update $query = NULL, $limit = 1)
+	{
+		// Apply modeling to the query
+		$query = $this->query_update($query, $limit);
+
+		// Import meta data
+		$meta = $this->meta();
+
+		// Execute the query and get the number of rows updated
+		$count = $query->execute($meta->db);
+
+		if ( ! $limit OR $limit > 1)
+		{
+			// Return the number of rows updated
+			return $count;
+		}
+
+		// Changes are now in sync with the database, effectively a clean load
+		$this->loaded(TRUE);
+
+		return $this;
+	}
+
+	public function delete(Database_Query_Builder_Delete $query = NULL, $limit = 1)
+	{
+
+	}
+
 	/**
 	 * Validate the current model data. Applies the field label, filters,
-	 * rules, and callbacks. [Validate::check] must be manually called.
+	 * rules, and callbacks to the data.
+	 *
+	 * A specific list of fields can be specifically validated. If no fields
+	 * are specified, all fields will be validated.
+	 *
+	 * A different data set can be validated instead of the model data.
 	 *
 	 *     $array = $model->validate();
 	 *
 	 * [!!] If no fields are specified, all fields will be validated.
 	 *
-	 * @param   array   list of fields to validate
+	 * @param   array  list of fields to validate
+	 * @param   array  external data to validate
 	 * @return  Validate
 	 */
-	public function validate(array $fields = NULL)
+	public function validate(array $fields = NULL, array $data = NULL)
 	{
-		$meta = static::$meta;
-
-		$data = Validate::factory($this->as_array());
-
 		if ( ! $fields)
 		{
 			// Validate all fields
 			$fields = array_keys($meta->fields);
 		}
+
+		if ($data === NULL)
+		{
+			// Validate the model data
+			$data = $this->as_array();
+		}
+
+		// Convert the data into a validation object
+		$data = Validate::factory($data);
+
+		// Import meta object
+		$meta = $this->meta();
 
 		foreach ($fields as $field)
 		{
@@ -510,16 +600,17 @@ abstract class Hive_Model {
 	 *     $query = $model->query_select();
 	 *
 	 * @param   object  SELECT query
+	 * @param   mixed   number of records to fetch, FALSE for all
 	 * @return  Database_Query_Builder_Select
 	 */
-	public function query_select(Database_Query_Builder_Select $query = NULL)
+	public function query_select(Database_Query_Builder_Select $query = NULL, $limit = NULL)
 	{
 		if ( ! $query)
 		{
 			$query = DB::select();
 		}
 
-		$meta = static::$meta;
+		$meta = $this->meta();
 
 		foreach ($meta->fields as $name => $field)
 		{
@@ -540,6 +631,59 @@ abstract class Hive_Model {
 		foreach ($meta->sorting as $name => $direction)
 		{
 			$query->order_by($meta->column($name), $direction);
+		}
+
+		if ($limit)
+		{
+			// Limit the number of results
+			$query->limit($limit);
+		}
+
+		return $query;
+	}
+
+	/**
+	 * Returns a UPDATE query for the current model data. If no query is given,
+	 * a new query will be created.
+	 *
+	 *     $query = $model->query_update();
+	 *
+	 * @param   object  UPDATE query
+	 * @param   mixed   number of records to update, FALSE for all
+	 * @return  Database_Query_Builder_Update
+	 */
+	public function query_update(Database_Query_Builder_Update $query = NULL, $limit = NULL)
+	{
+		if ( ! $query)
+		{
+			$query = DB::update();
+		}
+
+		// Import meta data
+		$meta = $this->meta();
+
+		// Set the table to update
+		$query->table($meta->table);
+
+		foreach ($meta->fields as $name => $field)
+		{
+			if (array_key_exists($name, $this->__changed))
+			{
+				// Field has been changed, set a new value
+				$query->value($meta->column($name), $this->__changed[$name]);
+			}
+
+			if ($field->primary AND $this->__data[$name])
+			{
+				// Field is unique, limit what gets updated
+				$query->where($meta->column($name), '=', $this->__data[$name]);
+			}
+		}
+
+		if ($limit)
+		{
+			// Limit the number of results
+			$query->limit($limit);
 		}
 
 		return $query;

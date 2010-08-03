@@ -13,32 +13,37 @@ class Hive_Meta {
 	public $table = '';
 
 	/**
-	 * @var  array  model fields
+	 * @var  array  model fields: name => field object, ...
 	 */
 	public $fields = array();
 
 	/**
-	 * @var  array  row sorting fields
+	 * @var  array  model aliases: name => function, ...
+	 */
+	public $aliases = array();
+
+	/**
+	 * @var  array  row sorting fields: name => direction, ...
 	 */
 	public $sorting = array();
 
 	/**
-	 * @var  array  model relations
+	 * @var  array  model relations: name => relation object, ...
 	 */
 	public $relations = array();
 
 	/**
-	 * @var  array  filters by field
+	 * @var  array  filters by field: name => filter list, ...
 	 */
 	public $filters = array();
 
 	/**
-	 * @var  array  rules by field
+	 * @var  array  rules by field: name => filter list, ...
 	 */
 	public $rules = array();
 
 	/**
-	 * @var  array  callbacks by field
+	 * @var  array  callbacks by field: name => callback list, ...
 	 */
 	public $callbacks = array();
 
