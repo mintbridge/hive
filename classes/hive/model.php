@@ -27,6 +27,16 @@ abstract class Hive_Model {
 	}
 
 	/**
+	 * @var  string  model identifier
+	 */
+	protected $__model = '';
+
+	/**
+	 * @var  boolean  has the model been initialized?
+	 */
+	protected $__init = FALSE;
+
+	/**
 	 * @var  boolean  is the model ready to be loaded?
 	 */
 	protected $__prepared = FALSE;
@@ -47,16 +57,6 @@ abstract class Hive_Model {
 	protected $__changed = array();
 
 	/**
-	 * @var  boolean  has the model been initialized?
-	 */
-	protected $__init = FALSE;
-
-	/**
-	 * @var  string  model class name
-	 */
-	protected $__class = '';
-
-	/**
 	 * Initializes model fields and loads meta data.
 	 *
 	 *     $model = new Model_Foo;
@@ -74,8 +74,8 @@ abstract class Hive_Model {
 		}
 		else
 		{
-			// Set the class name for later use
-			$this->__class = strtolower(get_class($this));
+			// Set the model name for later use
+			$this->__model = substr(strtolower(get_class($this)), 6);
 
 			// Reset the object
 			$this->reset();
@@ -260,13 +260,13 @@ abstract class Hive_Model {
 	 */
 	public function meta()
 	{
-		if ( ! isset(Hive::$meta[$this->__class]))
+		if ( ! isset(Hive::$meta[$this->__model]))
 		{
 			// Meta has not yet been created
-			Hive::$meta[$this->__class] = static::init();
+			Hive::$meta[$this->__model] = static::init();
 		}
 
-		return Hive::$meta[$this->__class];
+		return Hive::$meta[$this->__model];
 	}
 
 	/**
