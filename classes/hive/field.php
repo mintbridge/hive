@@ -8,14 +8,19 @@ abstract class Hive_Field {
 	// public $empty = FALSE;
 
 	/**
-	 * @var  boolean  convert empty values to NULL?
+	 * @var  boolean  is this field a primary key?
 	 */
-	public $null = FALSE;
+	public $primary = FALSE;
 
 	/**
 	 * @var  boolean  must this field always be unique?
 	 */
 	public $unique = FALSE;
+
+	/**
+	 * @var  boolean  convert empty values to NULL?
+	 */
+	public $null = FALSE;
 
 	/**
 	 * @var  mixed  default value
