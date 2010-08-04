@@ -1,6 +1,11 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Hive_Field_Integer extends Hive_Field {
+class Hive_Field_Float extends Hive_Field {
+
+	/**
+	 * @var  integer  number of decimals to show
+	 */
+	public $decimals = NULL;
 
 	public function value($value)
 	{
@@ -14,7 +19,7 @@ class Hive_Field_Integer extends Hive_Field {
 			$value = $this->default;
 		}
 
-		return (int) $value;
+		return (float) $value;
 	}
 
-} // End Hive_Field_Integer
+} // End Hive_Field_Float

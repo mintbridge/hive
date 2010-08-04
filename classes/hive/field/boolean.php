@@ -1,6 +1,6 @@
 <?php defined('SYSPATH') or die('No direct script access.');
 
-class Hive_Field_Integer extends Hive_Field {
+class Hive_Field_Boolean extends Hive_Field {
 
 	public function value($value)
 	{
@@ -14,7 +14,7 @@ class Hive_Field_Integer extends Hive_Field {
 			$value = $this->default;
 		}
 
-		return (int) $value;
+		return (boolean) $value;
 	}
 
-} // End Hive_Field_Integer
+} // End Hive_Field_Boolean
