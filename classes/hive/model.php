@@ -21,6 +21,69 @@ abstract class Hive_Model {
 		return $model;
 	}
 
+	/**
+	 * Get [Hive_Meta] object for a model. Creates a new singleton if the meta
+	 * object has not yet been created.
+	 *
+	 *     // All of the following will return the same object
+	 *     $meta = Hive::meta('person');
+	 *     $meta = Hive::meta(new Model_Person);
+	 *     $meta = Model_Person::meta();
+	 *
+	 * [!!] When calling this method within a model, use `static::meta($this)`
+	 * for best performance.
+	 *
+	 * @param   mixed   model name or object
+	 * @return  Hive_Meta
+	 * @uses    Hive::init
+	 */
+	public static function meta($model = NULL)
+	{
+		if (is_object($model))
+		{
+			// Get the name of the model
+			$model = $model->__model;
+		}
+		elseif ( ! $model)
+		{
+			// Get the model name using LSB
+			$model = strtolower(substr(get_called_class(), 6));
+		}
+
+		if ( ! isset(Hive::$meta[$model]))
+		{
+			// Meta has not yet been created
+			Hive::$meta[$model] = static::init();
+		}
+
+		return Hive::$meta[$model];
+	}
+
+	/**
+	 * Model meta initialization. Creates and returns a [Hive_Meta] object.
+	 *
+	 * [!!] __All models must define an `init` method!__ The `init` method must
+	 * set the table name and the fields.
+	 *
+	 *     public static function init()
+	 *     {
+	 *         $meta = parent::init();
+	 *
+	 *         $meta->table = 'people';
+	 *
+	 *         $meta->fields += array(
+	 *             'id' => new Hive_Field_Auto,
+	 *             'name' => new Hive_Field_String,
+	 *             'age' => new Hive_Field_Integer,
+	 *         );
+	 *
+	 *         return $meta;
+	 *     }
+	 *
+	 * Use [Hive::meta] to get the meta instance for a model.
+	 *
+	 * @return  Hive_Meta
+	 */
 	public static function init()
 	{
 		return new Hive_Meta;
@@ -65,6 +128,9 @@ abstract class Hive_Model {
 	 */
 	public function __construct()
 	{
+		// Set the name of this model, removing the "Model_" prefix
+		$this->__model = strtolower(substr(get_class($this), 6));
+
 		if ($this->__init === 0x3adb4)
 		{
 			// PHP *_fetch_object functions call __set before __construct.
@@ -74,9 +140,6 @@ abstract class Hive_Model {
 		}
 		else
 		{
-			// Set the model name for later use
-			$this->__model = substr(strtolower(get_class($this)), 6);
-
 			// Reset the object
 			$this->reset();
 		}
@@ -101,13 +164,13 @@ abstract class Hive_Model {
 	 */
 	public function __get($name)
 	{
-		if (isset($this->meta()->aliases[$name]))
+		if (isset(static::meta($this)->aliases[$name]))
 		{
 			// Call aliases, passing the model through
-			return $this->meta()->aliases[$name]($this);
+			return static::meta($this)->aliases[$name]($this);
 		}
 
-		if ( ! isset($this->meta()->fields[$name]))
+		if ( ! isset(static::meta($this)->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -155,7 +218,7 @@ abstract class Hive_Model {
 			$this->__init = 0x3adb4;
 		}
 
-		if ( ! isset($this->meta()->fields[$name]))
+		if ( ! isset(static::meta($this)->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -163,7 +226,7 @@ abstract class Hive_Model {
 			));
 		}
 
-		$field = $this->meta()->fields[$name];
+		$field = static::meta($this)->fields[$name];
 
 		$value = $field->value($value);
 
@@ -203,7 +266,7 @@ abstract class Hive_Model {
 	 */
 	public function __unset($name)
 	{
-		if ( ! isset($this->meta()->fields[$name]))
+		if ( ! isset(static::meta($this)->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -215,7 +278,7 @@ abstract class Hive_Model {
 		unset($this->__changed[$name]);
 
 		// Import the field
-		$field = $this->meta()->fields[$name];
+		$field = static::meta($this)->fields[$name];
 
 		// Reset the field value to the default value
 		$this->__data[$name] = $field->value($field->default);
@@ -231,7 +294,7 @@ abstract class Hive_Model {
 	 */
 	public function __isset($name)
 	{
-		$meta = $this->meta();
+		$meta = static::meta($this);
 
 		return isset($meta->fields[$name])
 			OR isset($meta->aliases[$name]);
@@ -251,22 +314,40 @@ abstract class Hive_Model {
 	}
 
 	/**
-	 * Get meta data object.
+	 * Get the current model data as an array. Changed values are combined with
+	 * loaded values.
 	 *
-	 *     $meta = $model->meta();
+	 *     $array = $model->as_array();
 	 *
-	 * @return  Hive_Meta
-	 * @uses    Hive::init
+	 * @return  array
 	 */
-	public function meta()
+	public function as_array()
 	{
-		if ( ! isset(Hive::$meta[$this->__model]))
+		// Get a list of model fields
+		$fields = array_keys(static::meta($this)->fields);
+
+		$array = array();
+
+		foreach ($fields as $name)
 		{
-			// Meta has not yet been created
-			Hive::$meta[$this->__model] = static::init();
+			// Add every field value to the array
+			$array[$name] = $this->$name;
 		}
 
-		return Hive::$meta[$this->__model];
+		return $array;
+	}
+
+	/**
+	 * Get the current model data as a JSON string.
+	 *
+	 *     $json = $model->as_json();
+	 *
+	 * @return  string
+	 * @uses    Hive::as_array
+	 */
+	public function as_json()
+	{
+		return json_encode($this->as_array());
 	}
 
 	/**
@@ -358,7 +439,7 @@ abstract class Hive_Model {
 	 */
 	public function reset()
 	{
-		$fields = array_keys($this->meta()->fields);
+		$fields = array_keys(static::meta($this)->fields);
 
 		foreach ($fields as $name)
 		{
@@ -385,7 +466,7 @@ abstract class Hive_Model {
 	 */
 	public function values($values, $clean = FALSE)
 	{
-		$values = array_intersect_key((array) $values, $this->meta()->fields);
+		$values = array_intersect_key((array) $values, static::meta($this)->fields);
 
 		if ($clean)
 		{
@@ -405,46 +486,8 @@ abstract class Hive_Model {
 		return $this;
 	}
 
-	/**
-	 * Get the current model data as an array. Changed values are combined with
-	 * loaded values.
-	 *
-	 *     $array = $model->as_array();
-	 *
-	 * @return  array
-	 */
-	public function as_array()
-	{
-		// Get a list of model fields
-		$fields = array_keys($this->meta()->fields);
-
-		$array = array();
-
-		foreach ($fields as $name)
-		{
-			// Add every field value to the array
-			$array[$name] = $this->$name;
-		}
-
-		return $array;
-	}
-
-	/**
-	 * Get the current model data as a JSON string.
-	 *
-	 *     $json = $model->as_json();
-	 *
-	 * @return  string
-	 * @uses    Hive::as_array
-	 */
-	public function as_json()
-	{
-		return json_encode($this->as_array());
-	}
-
 	public function create(Database_Query_Builder_Insert $query = NULL)
 	{
-
 	}
 
 	/**
@@ -468,7 +511,7 @@ abstract class Hive_Model {
 		$query = $this->query_select($query, $limit);
 
 		// Import meta data
-		$meta = $this->meta();
+		$meta = static::meta($this);
 
 		if ( ! $limit OR $limit > 1)
 		{
@@ -504,7 +547,7 @@ abstract class Hive_Model {
 		$query = $this->query_update($query, $limit);
 
 		// Import meta data
-		$meta = $this->meta();
+		$meta = static::meta($this);
 
 		// Execute the query and get the number of rows updated
 		$count = $query->execute($meta->db);
@@ -561,7 +604,7 @@ abstract class Hive_Model {
 		$data = Validate::factory($data);
 
 		// Import meta object
-		$meta = $this->meta();
+		$meta = static::meta($this);
 
 		foreach ($fields as $field)
 		{
@@ -610,7 +653,7 @@ abstract class Hive_Model {
 			$query = DB::select();
 		}
 
-		$meta = $this->meta();
+		$meta = static::meta($this);
 
 		foreach ($meta->fields as $name => $field)
 		{
@@ -660,7 +703,7 @@ abstract class Hive_Model {
 		}
 
 		// Import meta data
-		$meta = $this->meta();
+		$meta = static::meta($this);
 
 		// Set the table to update
 		$query->table($meta->table);
