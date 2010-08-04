@@ -31,7 +31,7 @@ abstract class Hive_Model {
 	 *     $meta = Model_Person::meta();
 	 *
 	 * [!!] When calling this method within a model, use `static::meta($this)`
-	 * for best performance.
+	 * or `Hive::$meta[$this->__model]` for best performance.
 	 *
 	 * @param   mixed   model name or object
 	 * @return  Hive_Meta
@@ -41,19 +41,25 @@ abstract class Hive_Model {
 	{
 		if (is_object($model))
 		{
-			// Get the name of the model
-			$model = $model->__model;
+			// Get the class name from the object
+			$model = get_class($model);
 		}
 		elseif ( ! $model)
 		{
-			// Get the model name using LSB
-			$model = strtolower(substr(get_called_class(), 6));
+			// Get the class using LSB
+			$model = get_called_class();
+		}
+		else
+		{
+			// Convert the model name to a class name
+			$model = strtolower("model_{$model}");
 		}
 
 		if ( ! isset(Hive::$meta[$model]))
 		{
-			// Meta has not yet been created
-			Hive::$meta[$model] = static::init();
+			// Meta has not yet been created, create it now
+			// Using static::init() here will not work properly!
+			Hive::$meta[$model] = $model::init();
 		}
 
 		return Hive::$meta[$model];
