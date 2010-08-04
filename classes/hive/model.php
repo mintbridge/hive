@@ -170,13 +170,19 @@ abstract class Hive_Model {
 	 */
 	public function __get($name)
 	{
-		if (isset(static::meta($this)->aliases[$name]))
+		// Import meta data
+		$meta = static::meta($this);
+
+		if (isset($meta->aliases[$name]))
 		{
+			// Import alias closure
+			$alias = $meta->aliases[$name];
+
 			// Call aliases, passing the model through
-			return static::meta($this)->aliases[$name]($this);
+			return $alias($this);
 		}
 
-		if ( ! isset(static::meta($this)->fields[$name]))
+		if ( ! isset($meta->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -224,7 +230,10 @@ abstract class Hive_Model {
 			$this->__init = 0x3adb4;
 		}
 
-		if ( ! isset(static::meta($this)->fields[$name]))
+		// Import meta data
+		$meta = static::meta($this);
+
+		if ( ! isset($meta->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -232,8 +241,10 @@ abstract class Hive_Model {
 			));
 		}
 
-		$field = static::meta($this)->fields[$name];
+		// Import field data
+		$field = $meta->fields[$name];
 
+		// Normalize the field value to the proper type
 		$value = $field->value($value);
 
 		if ($this->__data[$name] === $value)
@@ -243,6 +254,7 @@ abstract class Hive_Model {
 		}
 		else
 		{
+			// Value has been changed
 			$this->__changed[$name] = $value;
 
 			if ($field->unique)
@@ -272,7 +284,10 @@ abstract class Hive_Model {
 	 */
 	public function __unset($name)
 	{
-		if ( ! isset(static::meta($this)->fields[$name]))
+		// Import meta data
+		$meta = static::meta($this);
+
+		if ( ! isset($meta->fields[$name]))
 		{
 			throw new Hive_Exception('Field :name is not defined in :model', array(
 				':name'  => $name,
@@ -283,8 +298,8 @@ abstract class Hive_Model {
 		// Remove changed value
 		unset($this->__changed[$name]);
 
-		// Import the field
-		$field = static::meta($this)->fields[$name];
+		// Import field data
+		$field = $meta->fields[$name];
 
 		// Reset the field value to the default value
 		$this->__data[$name] = $field->value($field->default);
@@ -300,6 +315,7 @@ abstract class Hive_Model {
 	 */
 	public function __isset($name)
 	{
+		// Import meta data
 		$meta = static::meta($this);
 
 		return isset($meta->fields[$name])
@@ -329,8 +345,11 @@ abstract class Hive_Model {
 	 */
 	public function as_array()
 	{
+		// Import meta data
+		$meta = static::meta($this);
+
 		// Get a list of model fields
-		$fields = array_keys(static::meta($this)->fields);
+		$fields = array_keys($meta->fields);
 
 		$array = array();
 
@@ -445,7 +464,10 @@ abstract class Hive_Model {
 	 */
 	public function reset()
 	{
-		$fields = array_keys(static::meta($this)->fields);
+		// Import meta data
+		$meta = static::meta($this);
+
+		$fields = array_keys($meta->fields);
 
 		foreach ($fields as $name)
 		{
@@ -472,7 +494,10 @@ abstract class Hive_Model {
 	 */
 	public function values($values, $clean = FALSE)
 	{
-		$values = array_intersect_key((array) $values, static::meta($this)->fields);
+		// Import meta data
+		$meta = static::meta($this);
+
+		$values = array_intersect_key((array) $values, $meta->fields);
 
 		if ($clean)
 		{
@@ -659,6 +684,7 @@ abstract class Hive_Model {
 			$query = DB::select();
 		}
 
+		// Import meta data
 		$meta = static::meta($this);
 
 		foreach ($meta->fields as $name => $field)
