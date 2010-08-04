@@ -668,6 +668,57 @@ abstract class Hive_Model {
 	}
 
 	/**
+	 * Get a simple key => value array.
+	 *
+	 *     $people = $model->select_list('name' => 'age');
+	 *
+	 * @param   string  field name for key
+	 * @param   string  field name for value
+	 * @param   object  SELECT query
+	 * @return  array
+	 */
+	public function select_list($key, $value, Database_Query_Builder_Select $query = NULL)
+	{
+		// Import meta data
+		$meta = static::meta($this);
+
+		if ( ! $query)
+		{
+			// Create a new SELECT DISTINCT query
+			$query = DB::select()
+				->distinct(TRUE);
+		}
+
+		// Load only the key and value
+		$query
+			->select($meta->alias($key), $meta->alias($value))
+			->from($meta->table);
+
+		foreach ($meta->sorting as $name => $direction)
+		{
+			// Apply sorting
+			$query->order_by($meta->column($name), $direction);
+		}
+
+		// Load the result
+		$result = $this
+			->query_select($query)
+			->distinct(TRUE)
+			->as_object(get_class($this))
+			->execute($meta->db);
+
+		$list = array();
+
+		foreach ($result as $row)
+		{
+			// Create an associative array of the keys and values
+			$list[$row->$key] = $row->$value;
+		}
+
+		return $list;
+	}
+
+	/**
 	 * Returns a SELECT query for the current model data. If no query is given,
 	 * a new query will be created.
 	 *
