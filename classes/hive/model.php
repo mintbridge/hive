@@ -694,8 +694,14 @@ abstract class Hive_Model {
 
 		// Load only the key and value
 		$query
-			->select($meta->alias($key), $meta->alias($value))
+			->select(
+				$meta->alias($key),
+				$meta->alias($value)
+			)
 			->from($meta->table);
+
+		// Apply query conditions
+		$this->query_conditions($query);
 
 		foreach ($meta->sorting as $name => $direction)
 		{
@@ -730,6 +736,7 @@ abstract class Hive_Model {
 	 * @param   object  SELECT query
 	 * @param   mixed   number of records to fetch, FALSE for all
 	 * @return  Database_Query_Builder_Select
+	 * @uses    Hive::query_conditions
 	 */
 	public function query_select(Database_Query_Builder_Select $query = NULL, $limit = NULL)
 	{
@@ -744,18 +751,12 @@ abstract class Hive_Model {
 		foreach ($meta->fields as $name => $field)
 		{
 			$query->select($meta->alias($name));
-
-			if (array_key_exists($name, $this->__changed))
-			{
-				$query->where($meta->column($name), '=', $this->__changed[$name]);
-			}
-			elseif ($field->unique AND $this->__data[$name])
-			{
-				$query->where($meta->column($name), '=', $this->__data[$name]);
-			}
 		}
 
 		$query->from($meta->table);
+
+		// Apply query conditions
+		$this->query_conditions($query);
 
 		foreach ($meta->sorting as $name => $direction)
 		{
@@ -813,6 +814,39 @@ abstract class Hive_Model {
 		{
 			// Limit the number of results
 			$query->limit($limit);
+		}
+
+		return $query;
+	}
+
+	/**
+	 * Applies WHERE conditions to a query.
+	 *
+	 *     // Create a new SELECT query
+	 *     $query = DB::select();
+	 *
+	 *     // Apply model conditions
+	 *     $model->query_conditions($query);
+	 *
+	 *
+	 * @param   object  query builder
+	 * @return  object
+	 */
+	public function query_conditions(Database_Query_Builder $query)
+	{
+		// Import meta data
+		$meta = static::meta($this);
+
+		foreach ($meta->fields as $name => $field)
+		{
+			if (array_key_exists($name, $this->__changed))
+			{
+				$query->where($meta->column($name), '=', $this->__changed[$name]);
+			}
+			elseif ($field->unique AND $this->__data[$name])
+			{
+				$query->where($meta->column($name), '=', $this->__data[$name]);
+			}
 		}
 
 		return $query;
