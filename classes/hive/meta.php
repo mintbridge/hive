@@ -48,6 +48,43 @@ class Hive_Meta {
 	public $callbacks = array();
 
 	/**
+	 * Finishes the initialization of meta.
+	 *
+	 *     $meta->finish();
+	 *
+	 * @return  $this
+	 */
+	public function finish()
+	{
+		foreach ($this->fields as $name => $field)
+		{
+			if ( ! $field->table)
+			{
+				$field->table = $this->table;
+			}
+
+			if ( ! $field->column)
+			{
+				$field->column = $name;
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 * Get a single field object.
+	 *
+	 *     $id = $meta->field('id');
+	 *
+	 * @return  Hive_Field
+	 */
+	public function field($name)
+	{
+		return $this->fields[$name];
+	}
+
+	/**
 	 * Get the complete column name for a field.
 	 *
 	 *     $column = $meta->column('foo');
@@ -58,14 +95,7 @@ class Hive_Meta {
 	{
 		$field = $this->fields[$name];
 
-		if ($field->column)
-		{
-			return "{$this->table}.{$field->column}";
-		}
-		else
-		{
-			return "{$this->table}.{$name}";
-		}
+		return "{$field->table}.{$field->column}";
 	}
 
 	/**
@@ -79,37 +109,15 @@ class Hive_Meta {
 	{
 		$field = $this->fields[$name];
 
-		if ($field->column)
-		{
-			return array("{$this->table}.{$field->column}", $name);
-		}
-		else
-		{
-			return "{$this->table}.{$name}";
-		}
-	}
+		$alias = $this->column($name);
 
-	// public function finish()
-	// {
-	// 	foreach ($this->fields as $name => $field)
-	// 	{
-	// 		if ( ! $field->empty)
-	// 		{
-	// 			$this->rules[$name]['not_empty'] = NULL;
-	// 		}
-	//
-	// 		if ($field instanceof Hive_Field_Email)
-	// 		{
-	// 			$this->rules[$name]['email'] = NULL;
-	// 		}
-	//
-	// 		if ($field->unique)
-	// 		{
-	// 			$this->callbacks[$name]['email'] = TRUE;
-	// 		}
-	// 	}
-	//
-	// 	return $this;
-	// }
+		if ($field->column !== $name)
+		{
+			// Create a "foo AS bar" alias
+			$alias = array($alias, $name);
+		}
+
+		return $alias;
+	}
 
 } // End Hive_Meta

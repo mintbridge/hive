@@ -8,6 +8,11 @@ abstract class Hive_Field {
 	// public $empty = FALSE;
 
 	/**
+	 * @var  string  table that contains this field
+	 */
+	public $table = NULL;
+
+	/**
 	 * @var  boolean  is this field a primary key?
 	 */
 	public $primary = FALSE;

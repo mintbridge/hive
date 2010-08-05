@@ -60,6 +60,9 @@ abstract class Hive_Model {
 			// Meta has not yet been created, create it now
 			// Using static::init() here will not work properly!
 			Hive::$meta[$model] = $model::init();
+
+			// Finished initializing the meta object
+			Hive::$meta[$model]->finish();
 		}
 
 		return Hive::$meta[$model];
