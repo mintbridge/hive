@@ -604,6 +604,42 @@ abstract class Hive_Model {
 	}
 
 	/**
+	 * Get the total number of records matching the current model.
+	 *
+	 *     $total = $model->total();
+	 *
+	 * @param   object  SELECT query
+	 * @return  integer
+	 * @uses    Hive::query_conditions
+	 */
+	public function total(Database_Query_Builder_Select $query = NULL)
+	{
+		if ( ! $query)
+		{
+			// Create a new SELECT query
+			$query = DB::select();
+		}
+
+		// Import meta data
+		$meta = static::meta($this);
+
+		$query->from($meta->table);
+
+		// Apply query conditions
+		$this->query_conditions($query);
+
+		// Convert the query into a sub-query:
+		// SELECT COUNT(*) AS total FROM (SELECT ...) AS results
+		$query = DB::select(array('COUNT("*")', 'total'))
+			->from(array($query, 'results'));
+
+		return $query
+			->as_object(FALSE)
+			->execute($meta->db)
+			->get('total');
+	}
+
+	/**
 	 * Validate the current model data. Applies the field label, filters,
 	 * rules, and callbacks to the data.
 	 *
