@@ -28,8 +28,12 @@ All models must declare an `init` method. This method must obtain the meta objec
                     'unique' => TRUE,
                 )),
                 'password'  => new Hive_Field_String,
-                'created' => new Hive_Field_Timestamp,
-                'updated' => new Hive_Field_Timestamp,
+                'created' => new Hive_Field_Timestamp(array(
+                    'auto_now_create' => TRUE,
+                )),
+                'updated' => new Hive_Field_Timestamp(array(
+                    'auto_now_update' => TRUE,
+                )),
                 'last_login' => new Hive_Field_Timestamp,
             );
 
