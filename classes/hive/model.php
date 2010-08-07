@@ -636,11 +636,20 @@ abstract class Hive_Model {
 	 */
 	public function update(Database_Query_Builder_Update $query = NULL, $limit = 1)
 	{
-		// Apply modeling to the query
-		$query = $this->query_update($query, $limit);
-
 		// Import meta data
 		$meta = static::meta($this);
+
+		foreach ($meta->fields as $name => $field)
+		{
+			if ($field instanceof Hive_Field_Timestamp AND $field->auto_now_update)
+			{
+				// Set the updated time
+				$this->$name = time();
+			}
+		}
+
+		// Apply modeling to the query
+		$query = $this->query_update($query, $limit);
 
 		// Execute the query and get the number of rows updated
 		$count = $query->execute($meta->db);
