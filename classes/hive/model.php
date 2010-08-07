@@ -575,6 +575,21 @@ abstract class Hive_Model {
 		return $this;
 	}
 
+	/**
+	 * Update model data in the database.
+	 *
+	 *     // Update database from model
+	 *     $model->update();
+	 *
+	 *     // Update all records and get the number of rows updated
+	 *     $total = $model->update(NULL, FALSE);
+	 *
+	 * @param   object   UPDATE query
+	 * @param   mixed    number of records to update, FALSE for all
+	 * @return  $this    when updating a single object
+	 * @return  integer  when updating multiple objects
+	 * @uses    Hive::query_update
+	 */
 	public function update(Database_Query_Builder_Update $query = NULL, $limit = 1)
 	{
 		// Apply modeling to the query
@@ -934,7 +949,6 @@ abstract class Hive_Model {
 	 *
 	 *     // Apply model conditions
 	 *     $model->query_conditions($query);
-	 *
 	 *
 	 * @param   object  query builder
 	 * @return  object
