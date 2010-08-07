@@ -520,8 +520,52 @@ abstract class Hive_Model {
 		return $this;
 	}
 
+	/**
+	 * Create a new database record from model data.
+	 *
+	 *     // Create record from model
+	 *     $model->create();
+	 *
+	 * @param   object  INSERT query
+	 * @return  $this            when loading a single object
+	 * @uses    Hive::query_insert
+	 */
 	public function create(Database_Query_Builder_Insert $query = NULL)
 	{
+		// Import meta data
+		$meta = static::meta($this);
+
+		foreach ($meta->fields as $name => $field)
+		{
+			if ($field instanceof Hive_Field_Timestamp AND $field->auto_now_create)
+			{
+				// Set the creation time
+				$this->$name = time();
+			}
+		}
+
+		// Apply modeling to the query
+		$query = $this->query_insert($query);
+
+		// Execute the query and get the last insert id
+		$id = $query->execute($meta->db);
+
+		foreach ($meta->fields as $name => $field)
+		{
+			if ($field->primary AND $field instanceof Hive_Field_Auto)
+			{
+				// Set the auto increment id
+				$this->$name = $id;
+
+				// Only one auto column is allowed
+				break;
+			}
+		}
+
+		// Model is in sync with the database
+		$this->loaded(TRUE);
+
+		return $this;
 	}
 
 	/**
@@ -812,6 +856,45 @@ abstract class Hive_Model {
 		}
 
 		return $list;
+	}
+
+	/**
+	 * Returns a INSERT query for the current model data. If no query is given,
+	 * a new query will be created.
+	 *
+	 *     $query = $model->query_insert();
+	 *
+	 * @param   object  INSERT query
+	 * @return  Database_Query_Builder_Insert
+	 */
+	public function query_insert(Database_Query_Builder_Insert $query = NULL)
+	{
+		if ( ! $query)
+		{
+			$query = DB::insert();
+		}
+
+		// Import meta data
+		$meta = static::meta($this);
+
+		// Create a new set of values
+		$values = array();
+
+		foreach ($meta->fields as $name => $field)
+		{
+			// Add the value using the column name
+			$values[$meta->column($name)] = $this->$name;
+		}
+
+		$query->table($meta->table);
+
+		// Set the inserted columns
+		$query->columns(array_keys($values));
+
+		// Set the values for the columns
+		$query->values($values);
+
+		return $query;
 	}
 
 	/**
