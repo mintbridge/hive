@@ -25,4 +25,11 @@ class Hive_Field_Boolean extends Hive_Field {
 		return (boolean) $value;
 	}
 
+	public function verbose($value)
+	{
+		$value = $this->value($value);
+
+		return $value ? 'Yes' : 'No';
+	}
+
 } // End Hive_Field_Boolean

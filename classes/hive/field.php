@@ -10,11 +10,6 @@
  */
 abstract class Hive_Field {
 
-	// /**
-	//  * @var  boolean  can this field be an empty value?
-	//  */
-	// public $empty = FALSE;
-
 	/**
 	 * @var  string  table that contains this field
 	 */
@@ -45,6 +40,12 @@ abstract class Hive_Field {
 	 */
 	public $column;
 
+	/**
+	 * Set field options.
+	 *
+	 * @param   array  field options
+	 * @return  void
+	 */
 	public function __construct(array $options = NULL)
 	{
 		if ($options)
@@ -54,6 +55,29 @@ abstract class Hive_Field {
 				$this->$key = $val;
 			}
 		}
+	}
+
+	/**
+	 * Convert an incoming value to the proper type.
+	 *
+	 *     $value = $field->value($value);
+	 *
+	 * @param   mixed  value
+	 * @return  mixed
+	 */
+	abstract public function value($value);
+
+	/**
+	 * Convert a value to a human readable format.
+	 *
+	 *     $verbose = $field->value($value);
+	 *
+	 * @param   mixed  value
+	 * @return  string
+	 */
+	public function verbose($value)
+	{
+		return (string) $value;
 	}
 
 } // End Hive_Field

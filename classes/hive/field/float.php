@@ -30,4 +30,16 @@ class Hive_Field_Float extends Hive_Field {
 		return (float) $value;
 	}
 
+	public function verbose($value)
+	{
+		$value = $this->value($value);
+
+		if ($this->decimals)
+		{
+			$value = Num::format($value, $this->decimals);
+		}
+
+		return (string) $value;
+	}
+
 } // End Hive_Field_Float

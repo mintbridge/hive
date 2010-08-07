@@ -20,6 +20,9 @@ class Hive_Field_Timestamp extends Hive_Field_Integer {
 	 */
 	public $auto_now_update = FALSE;
 
+	/**
+	 * @var  string  date format for verbose timestamps
+	 */
 	public $format = 'm/d/Y';
 
 	public $null = TRUE;
@@ -32,6 +35,13 @@ class Hive_Field_Timestamp extends Hive_Field_Integer {
 		}
 
 		return parent::value($value);
+	}
+
+	public function verbose($value)
+	{
+		$value = $this->value($value);
+
+		return date($this->format, $value);
 	}
 
 } // End Hive_Field_Timestamp
