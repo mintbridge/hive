@@ -598,9 +598,45 @@ abstract class Hive_Model {
 		return $this;
 	}
 
+	/**
+	 * Delete model data from the database.
+	 *
+	 *     // Delete model from the database
+	 *     $model->delete();
+	 *
+	 *     // Delete all records and get the number of rows deleted
+	 *     $total = $model->delete(NULL, FALSE);
+	 *
+	 * [!!] Model data will still be intact after deleting and can be accessed
+	 * for additional processing.
+	 *
+	 * @param   object   DELETE query
+	 * @param   mixed    number of records to delete, FALSE for all
+	 * @return  $this    when deleting a single object
+	 * @return  integer  when deleting multiple objects
+	 * @uses    Hive::query_delete
+	 */
 	public function delete(Database_Query_Builder_Delete $query = NULL, $limit = 1)
 	{
+		// Apply modeling to the query
+		$query = $this->query_delete($query, $limit);
 
+		// Import meta data
+		$meta = static::meta($this);
+
+		// Execute the query and get the number of rows updated
+		$count = $query->execute($meta->db);
+
+		if ( ! $limit OR $limit > 1)
+		{
+			// Return the number of rows updated
+			return $count;
+		}
+
+		// Model has been deleted, but leave current model data intact
+		// so that it can be accessed after deletion.
+
+		return $this;
 	}
 
 	/**
@@ -849,6 +885,41 @@ abstract class Hive_Model {
 		if ($limit)
 		{
 			// Limit the number of results
+			$query->limit($limit);
+		}
+
+		return $query;
+	}
+
+	/**
+	 * Returns a DELETE query for the current model data. If no query is given,
+	 * a new query will be created.
+	 *
+	 *     $query = $model->query_delete();
+	 *
+	 * @param   object  DELETE query
+	 * @param   mixed   number of records to delete, FALSE for all
+	 * @return  Database_Query_Builder_Delete
+	 */
+	public function query_delete(Database_Query_Builder_Delete $query, $limit = NULL)
+	{
+		if ( ! $query)
+		{
+			$query = DB::delete();
+		}
+
+		// Import meta data
+		$meta = static::meta($this);
+
+		// Set the table to update
+		$query->table($meta->table);
+
+		// Apply query conditions
+		$this->query_conditions($query);
+
+		if ($limit)
+		{
+			// Limit the number of deletions
 			$query->limit($limit);
 		}
 
