@@ -12,6 +12,12 @@ class Hive_Relation_HasMany extends Hive_Relation {
 
 	public function read(Hive $parent)
 	{
+		if ( ! $parent->prepared() AND ! $parent->loaded())
+		{
+			// Nothing can be loaded when no unique model exists
+			return array();
+		}
+
 		// Create child model
 		$child = Hive::factory($this->model);
 
