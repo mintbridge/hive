@@ -440,7 +440,7 @@ abstract class Hive_Model {
 	 *
 	 *     // Force the model to be loading
 	 *     $model->loading(TRUE);
-	 * 
+	 *
 	 * @param   boolean   new state
 	 * @return  boolean   when getting
 	 * @return  $this     when setting
@@ -549,28 +549,15 @@ abstract class Hive_Model {
 	 *     $model->values($_POST);
 	 *
 	 * @param   array    values to change
-	 * @param   boolean  are the values clean? (typically not)
 	 * @return  $this
 	 */
 	public function values($values, $clean = FALSE)
 	{
-		// Import meta data
-		$meta = static::meta($this);
-
-		$values = array_intersect_key((array) $values, $meta->fields);
-
-		if ($clean)
+		foreach ($values as $name => $value)
 		{
-			foreach ($values as $name => $value)
+			if ($this->__isset($name))
 			{
-				$this->__changed[$name] = $value;
-			}
-		}
-		else
-		{
-			foreach ($values as $name => $value)
-			{
-				$this->$name = $value;
+				$this->__set($name, $value);
 			}
 		}
 
