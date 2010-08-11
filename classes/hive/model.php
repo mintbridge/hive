@@ -592,7 +592,7 @@ abstract class Hive_Model {
 		$query = $this->query_insert($query);
 
 		// Execute the query and get the last insert id
-		$id = $query->execute($meta->db);
+		list($id) = $query->execute($meta->db);
 
 		foreach ($meta->fields as $name => $field)
 		{
