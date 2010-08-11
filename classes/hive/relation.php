@@ -59,6 +59,6 @@ abstract class Hive_Relation {
 	 * @param   Hive  parent model
 	 * @return  array
 	 */
-	abstract public function query_select(Hive $parent);
+	abstract public function read(Hive $parent);
 
 } // End Hive_Relation
