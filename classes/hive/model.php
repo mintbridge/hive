@@ -804,14 +804,28 @@ abstract class Hive_Model {
 	 *
 	 * [!!] If no fields are specified, all fields will be validated.
 	 *
-	 * @param   array  list of fields to validate
-	 * @param   array  external data to validate
+	 * @param   string  context to validate within: create, update, etc
+	 * @param   array   external data to validate
 	 * @return  Validate
 	 */
-	public function validate(array $fields = NULL, array $data = NULL)
+	public function validate($context = NULL, array $data = NULL)
 	{
-		if ( ! $fields)
+		// Import meta object
+		$meta = static::meta($this);
+
+		if (isset($meta->validate[$context]))
 		{
+			// Import the context
+			$context = $meta->validate[$context];
+
+			// Validate only the fields in this context
+			$fields = array_keys($context);
+		}
+		else
+		{
+			// No context is being used
+			$context = NULL;
+
 			// Validate all fields
 			$fields = array_keys($meta->fields);
 		}
@@ -824,9 +838,6 @@ abstract class Hive_Model {
 
 		// Convert the data into a validation object
 		$data = Validate::factory($data);
-
-		// Import meta object
-		$meta = static::meta($this);
 
 		foreach ($fields as $field)
 		{
@@ -852,6 +863,27 @@ abstract class Hive_Model {
 			{
 				// Apply the callbacks for this field
 				$data->callbacks($field, $meta->callbacks[$field]);
+			}
+
+			if (isset($context[$field]))
+			{
+				if (isset($context[$field]['filters']))
+				{
+					// Apply the filters for this field in this context
+					$data->filters($field, $context[$field]['filters']);
+				}
+
+				if (isset($context[$field]['rules']))
+				{
+					// Apply the callbacks for this field in this context
+					$data->rules($field, $context[$field]['rules']);
+				}
+
+				if (isset($context[$field]['callbacks']))
+				{
+					// Apply the callbacks for this field in this context
+					$data->callbacks($field, $context[$field]['callbacks']);
+				}
 			}
 		}
 

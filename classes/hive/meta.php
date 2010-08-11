@@ -56,6 +56,11 @@ class Hive_Meta {
 	public $callbacks = array();
 
 	/**
+	 * @var  array  validation context: context => field list, ...
+	 */
+	public $validate = array();
+
+	/**
 	 * Finishes the initialization of meta.
 	 *
 	 *     $meta->finish();
