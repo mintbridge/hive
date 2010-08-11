@@ -137,6 +137,11 @@ abstract class Hive_Model {
 	protected $__changed = array();
 
 	/**
+	 * @var  array  relation data
+	 */
+	protected $__relations = array();
+
+	/**
 	 * Initializes model fields and loads meta data.
 	 *
 	 *     $model = new Model_Foo;
@@ -191,6 +196,17 @@ abstract class Hive_Model {
 
 			// Call aliases, passing the model through
 			return $alias($this);
+		}
+
+		if (isset($meta->relations[$name]))
+		{
+			if ( ! isset($this->__relations[$name]))
+			{
+				// Load the relationship
+				$this->__relations[$name] = $meta->relations[$name]->read($this);
+			}
+
+			return $this->__relations[$name];
 		}
 
 		if ( ! isset($meta->fields[$name]))
@@ -330,7 +346,8 @@ abstract class Hive_Model {
 		$meta = static::meta($this);
 
 		return isset($meta->fields[$name])
-			OR isset($meta->aliases[$name]);
+			OR isset($meta->aliases[$name])
+			OR isset($meta->relations[$name]);
 	}
 
 	/**

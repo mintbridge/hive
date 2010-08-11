@@ -93,6 +93,18 @@ class Hive_Meta {
 	}
 
 	/**
+	 * Get a single relation object.
+	 *
+	 *     $other = $meta->relation('thing');
+	 *
+	 * @return  Hive_Relation
+	 */
+	public function relation($name)
+	{
+		return $this->relations[$name];
+	}
+
+	/**
 	 * Get the complete column name for a field.
 	 *
 	 *     $column = $meta->column('foo');
