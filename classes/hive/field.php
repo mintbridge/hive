@@ -41,6 +41,11 @@ abstract class Hive_Field {
 	public $column;
 
 	/**
+	 * @var  closure  anonymous function($model, $value) called when value is changed
+	 */
+	public $on_change = NULL;
+
+	/**
 	 * Set field options.
 	 *
 	 * @param   array  field options

@@ -269,6 +269,15 @@ abstract class Hive_Model {
 		// Normalize the field value to the proper type
 		$value = $field->value($value);
 
+		if ( ! $this->loading() AND $field->on_change)
+		{
+			// Cannot use closures as methods!
+			$callback = $field->on_change;
+
+			// Execute the closure
+			$value = $callback($this, $value);
+		}
+
 		if ($this->__data[$name] === $value)
 		{
 			// Value is the same as original, remove changes
