@@ -939,8 +939,11 @@ abstract class Hive_Model {
 
 		foreach ($meta->fields as $name => $field)
 		{
-			// Add the value using the column name
-			$values[$meta->column($name)] = $this->$name;
+			if ( ! $field instanceof Hive_Field_Auto)
+			{
+				// Add the value using the column name
+				$values[$meta->column($name)] = $this->$name;
+			}
 		}
 
 		$query->table($meta->table);
