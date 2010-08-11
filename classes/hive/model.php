@@ -197,7 +197,7 @@ abstract class Hive_Model {
 		{
 			if ( ! isset($this->__relations[$name]))
 			{
-				// Load the relationship
+				// Lazy loading!
 				$this->__relations[$name] = $meta->relations[$name]->read($this);
 			}
 
@@ -214,12 +214,14 @@ abstract class Hive_Model {
 
 		if (array_key_exists($name, $this->__changed))
 		{
+			// The most up to date value for this field
 			return $this->__changed[$name];
 		}
 		else
 		{
 			if ( ! $this->loaded() AND $this->prepared())
 			{
+				// Lazy loading!
 				$this->read();
 			}
 
