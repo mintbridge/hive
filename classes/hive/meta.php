@@ -86,6 +86,37 @@ class Hive_Meta {
 	}
 
 	/**
+	 * [Validate] callback, used to test if a field value is unique.
+	 *
+	 *     $data->callback($name, array($meta, 'is_unique'));
+	 *
+	 * @param   Validate  array
+	 * @param   string    field name
+	 * @return  void
+	 */
+	public function is_unique($array, $name)
+	{
+		// SELECT name FROM table WHERE name = $name
+		$query = DB::select($this->alias($name))
+			->from($this->table)
+			->where($this->column($name), '=', $array[$name])
+			->as_object(FALSE)
+			;
+
+		// Get the number of records found
+		$result = (int) $query
+			->execute($this->db)
+			->count()
+			;
+
+		if ($result)
+		{
+			// Records found, this field is not unique!
+			$array->error($name, 'not_unique');
+		}
+	}
+
+	/**
 	 * Get a single field object.
 	 *
 	 *     $id = $meta->field('id');
