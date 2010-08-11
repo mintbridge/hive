@@ -112,19 +112,14 @@ abstract class Hive_Model {
 	protected $__model = '';
 
 	/**
-	 * @var  boolean  has the model been initialized?
+	 * @var  array  what is model state?
 	 */
-	protected $__init = FALSE;
-
-	/**
-	 * @var  boolean  is the model ready to be loaded?
-	 */
-	protected $__prepared = FALSE;
-
-	/**
-	 * @var  boolean  is the model loaded?
-	 */
-	protected $__loaded = FALSE;
+	protected $__state = array(
+		'init'     => FALSE,
+		'prepared' => FALSE,
+		'loading'  => FALSE,
+		'loaded'   => FALSE,
+	);
 
 	/**
 	 * @var  array  loaded data
@@ -153,7 +148,7 @@ abstract class Hive_Model {
 		// Set the name of this model, removing the "Model_" prefix
 		$this->__model = strtolower(substr(get_class($this), 6));
 
-		if ($this->__init === 0x3adb4)
+		if ($this->loading())
 		{
 			// PHP *_fetch_object functions call __set before __construct.
 			// To work around the problem, __construct is called twice.
@@ -166,8 +161,8 @@ abstract class Hive_Model {
 			$this->reset();
 		}
 
-		// Initialization is now complete
-		$this->__init = TRUE;
+		// Model is now initialized
+		$this->__state['init'] = TRUE;
 	}
 
 	/**
@@ -248,13 +243,13 @@ abstract class Hive_Model {
 	 */
 	public function __set($name, $value)
 	{
-		if ( ! $this->__init)
+		if ( ! $this->__state['init'])
 		{
+			// Hack for working with *_fetch_object
 			$this->__construct();
 
-			// Hack for working with *_fetch_object
-			// (Bunny egg! What does this say? Hint: 10/24)
-			$this->__init = 0x3adb4;
+			// We are about to load from a database result
+			$this->loading(TRUE);
 		}
 
 		// Import meta data
@@ -281,9 +276,6 @@ abstract class Hive_Model {
 		}
 		else
 		{
-			// Value has been changed
-			$this->__changed[$name] = $value;
-
 			if ($field->unique)
 			{
 				if ($value)
@@ -295,6 +287,9 @@ abstract class Hive_Model {
 					$this->prepared(FALSE);
 				}
 			}
+
+			// Value has been changed
+			return $this->__changed[$name] = $value;
 		}
 	}
 
@@ -421,11 +416,35 @@ abstract class Hive_Model {
 	{
 		if ($state === NULL)
 		{
-			return $this->__prepared;
+			return $this->__state['prepared'];
 		}
 
 		// Change state
-		$this->__prepared = (bool) $state;
+		$this->__state['prepared'] = (bool) $state;
+
+		return $this;
+	}
+
+	/**
+	 * Get and set the model's "loading". If a model is loading, is is prepared
+	 * to receive unchanged, verified information.
+	 *
+	 *     // Force the model to be loading
+	 *     $model->loading(TRUE);
+	 * 
+	 * @param   boolean   new state
+	 * @return  boolean   when getting
+	 * @return  $this     when setting
+	 */
+	public function loading($state = NULL)
+	{
+		if ($state === NULL)
+		{
+			return $this->__state['loading'];
+		}
+
+		// Change state
+		$this->__state['loading'] = (bool) $state;
 
 		return $this;
 	}
@@ -448,19 +467,20 @@ abstract class Hive_Model {
 	{
 		if ($state === NULL)
 		{
-			return $this->__loaded;
+			return $this->__state['loaded'];
 		}
 
 		// Change state
-		$this->__loaded = (bool) $state;
-
-		if ($this->__loaded)
+		if ($this->__state['loaded'] = (bool) $state)
 		{
 			// Move changes into data
 			$this->__data = array_merge($this->__data, $this->__changed);
 
 			// Clear all changes
 			$this->__changed = array();
+
+			// Loading is done when the model is loaded
+			$this->loading(FALSE);
 		}
 
 		return $this;
@@ -495,18 +515,21 @@ abstract class Hive_Model {
 		// Import meta data
 		$meta = static::meta($this);
 
+		// Get a list of all fields
 		$fields = array_keys($meta->fields);
 
 		foreach ($fields as $name)
 		{
 			// Reset the field to the default value
-			unset($this->$name);
+			$this->__unset($name);
 		}
 
 		// Reset the model state
 		$this
 			->prepared(FALSE)
-			->loaded(FALSE);
+			->loading(FALSE)
+			->loaded(FALSE)
+			;
 
 		return $this;
 	}
@@ -579,6 +602,9 @@ abstract class Hive_Model {
 		{
 			if ($field->primary AND $field instanceof Hive_Field_Auto)
 			{
+				// Data is being loaded
+				$this->loading(TRUE);
+
 				// Set the auto increment id
 				$this->$name = $id;
 
@@ -632,6 +658,7 @@ abstract class Hive_Model {
 		{
 			// A result has been found, load the values
 			$this
+				->loading(TRUE)
 				->values($result)
 				->loaded(TRUE);
 		}
