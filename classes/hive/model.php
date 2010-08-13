@@ -119,6 +119,7 @@ abstract class Hive_Model {
 		'prepared' => FALSE,
 		'loading'  => FALSE,
 		'loaded'   => FALSE,
+		'deleted'  => FALSE,
 	);
 
 	/**
@@ -501,6 +502,28 @@ abstract class Hive_Model {
 	}
 
 	/**
+	 * Get and set the model's "deleted" state.
+	 *
+	 *     // Force the model to be deleted
+	 *     $model->deleted(TRUE);
+	 *
+	 * @param   boolean  new state
+	 * @return  boolean  when getting
+	 * @return  $this    when setting
+	 */
+	public function deleted($state = NULL)
+	{
+		if ($state === NULL)
+		{
+			return $this->__state['deleted'];
+		}
+
+		$this->__state['deleted'] = (bool) $value;
+
+		return $this;
+	}
+
+	/**
 	 * Get the currently changed data.
 	 *
 	 *     // Get changed data
@@ -756,6 +779,7 @@ abstract class Hive_Model {
 
 		// Model has been deleted, but leave current model data intact
 		// so that it can be accessed after deletion.
+		$this->deleted(TRUE);
 
 		return $this;
 	}
