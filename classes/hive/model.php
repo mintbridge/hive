@@ -492,6 +492,9 @@ abstract class Hive_Model {
 
 			// Loading is done when the model is loaded
 			$this->loading(FALSE);
+
+			// Model is naturally prepared once it becomes loaded
+			$this->prepared(TRUE);
 		}
 
 		return $this;
