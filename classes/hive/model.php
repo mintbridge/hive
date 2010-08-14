@@ -223,7 +223,7 @@ abstract class Hive_Model {
 		}
 		else
 		{
-			if ( ! $this->loaded() AND $this->prepared())
+			if ($this->prepared() AND ! $this->loaded() AND ! $this->loading())
 			{
 				// Lazy loading!
 				$this->read();
@@ -260,6 +260,19 @@ abstract class Hive_Model {
 
 		// Import meta data
 		$meta = static::meta($this);
+
+		if (isset($meta->relations[$name]))
+		{
+			$relation = $meta->relations[$name];
+
+			foreach ($relation->using as $local => $remote)
+			{
+				// Reconcile the model joining values
+				$this->$local = $value->$remote;
+			}
+
+			return $this->__relations[$name] = $value;
+		}
 
 		if ( ! isset($meta->fields[$name]))
 		{

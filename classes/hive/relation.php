@@ -13,12 +13,12 @@ abstract class Hive_Relation {
 	/**
 	 * @var  string  relation model name
 	 */
-	protected $model = '';
+	public $model = '';
 
 	/**
 	 * @var  array  fields to join: local => remote, ...
 	 */
-	protected $fields = array();
+	public $using = array();
 
 	/**
 	 * Set relation options.
@@ -43,10 +43,10 @@ abstract class Hive_Relation {
 			));
 		}
 
-		if ( ! $this->fields)
+		if ( ! $this->using)
 		{
 			throw new Hive_Exception('All relations must specify :option', array(
-				':option' => 'fields',
+				':option' => 'using',
 			));
 		}
 	}
