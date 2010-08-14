@@ -146,8 +146,11 @@ abstract class Hive_Model {
 	 */
 	public function __construct()
 	{
-		// Set the name of this model, removing the "Model_" prefix
-		$this->__model = strtolower(substr(get_class($this), 6));
+		if ( ! $this->__model)
+		{
+			// Set the name of this model, removing the "Model_" prefix
+			$this->__model = strtolower(substr(get_class($this), 6));
+		}
 
 		if ($this->loading())
 		{
