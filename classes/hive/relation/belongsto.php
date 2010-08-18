@@ -12,7 +12,17 @@ class Hive_Relation_BelongsTo extends Hive_Relation {
 
 	public function read(Hive $parent)
 	{
-		throw new Hive_Exception('Not yet implemented');
+		$child = Hive::factory($this->model);
+
+		if ($parent->prepared())
+		{
+			foreach ($this->using as $parent_field => $child_field)
+			{
+				$child->$child_field = $parent->$parent_field;
+			}
+		}
+
+		return $child;
 	}
 
 } // End Hive_Relation_BelongsTo
