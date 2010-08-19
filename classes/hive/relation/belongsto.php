@@ -12,7 +12,9 @@ class Hive_Relation_BelongsTo extends Hive_Relation {
 
 	public function read(Hive $parent)
 	{
-		$child = Hive::factory($this->model);
+		$child = Hive::factory($this->model, array(
+			$this->parent => $parent,
+		));
 
 		if ($parent->prepared())
 		{

@@ -8,7 +8,12 @@
  * @copyright  (c) 2008-2009 Woody Gilk
  * @license    MIT
  */
-class Hive_Relation_HasMany extends Hive_Relation {
+class Hive_Relation_HasAndBelongsToMany extends Hive_Relation {
+
+	/**
+	 * @var  string  table name
+	 */
+	public $table = '';
 
 	public function read(Hive $parent)
 	{
@@ -27,19 +32,17 @@ class Hive_Relation_HasMany extends Hive_Relation {
 			$query = $child->query_select();
 
 			// Apply JOINs
-			$query->join($parent_meta->table);
+			$query->join($this->table);
 
-			foreach ($this->using as $parent_field => $child_field)
+			foreach ($this->using['child'] as $local => $remote)
 			{
-				$query->on(
-					$parent_meta->column($parent_field),
-					'=',
-					$child_meta->column($child_field)
-				);
+				$query->on($child_meta->column($local), '=', "{$this->table}.{$remote}");
 			}
 
-			// Apply parent WHERE conditions
-			$parent->query_conditions($query);
+			foreach ($this->using['parent'] as $local => $remote)
+			{
+				$query->where("{$this->table}.{$remote}", '=', $parent->$local);
+			}
 
 			// Return the result as an array of child objects
 			$results = $query
@@ -54,4 +57,4 @@ class Hive_Relation_HasMany extends Hive_Relation {
 		return $container;
 	}
 
-} // End Hive_Relation_HasMany
+} // End Hive_Relation_HasAndBelongsToMany

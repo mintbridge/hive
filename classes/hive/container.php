@@ -8,22 +8,45 @@
  * @copyright  (c) 2010 Woody Gilk
  * @license    MIT
  */
-class Hive_Container implements ArrayAccess {
+class Hive_Container extends ArrayObject {
+
+	/**
+	 * Create a new container.
+	 *
+	 *     $container = Hive_Container::factory($owner, $relation);
+	 *
+	 * @param   Hive           owner of this container
+	 * @param   Hive_Relation  relation that generated this container
+	 * @return  Hive_Container
+	 */
+	public static function factory(Hive $owner = NULL, Hive_Relation $relation = NULL)
+	{
+		$container = new Hive_Container;
+
+		if ($owner)
+		{
+			// Store the owner that created this container
+			$container->owner($owner);
+		}
+
+		if ($relation)
+		{
+			// Store the relation that created this container
+			$container->relation($relation);
+		}
+
+		return $container;
+	}
 
 	/**
 	 * @var  Hive  owner of this container
 	 */
-	public $owner;
+	protected $__owner;
 
 	/**
 	 * @var  Hive_Relation  relationship of the owner to this container
 	 */
-	public $relation;
-
-	/**
-	 * @var  array  contained models
-	 */
-	protected $__data = array();
+	protected $__relation;
 
 	/**
 	 * @var  array   removed models
@@ -38,17 +61,33 @@ class Hive_Container implements ArrayAccess {
 	 * @param   array  associtive array of models
 	 * @return  void
 	 */
-	public function __construct(Hive $owner = NULL, Hive_Relation $relation)
+	public function __construct(array $data = array())
 	{
-		if ($owner)
-		{
-			$this->owner = $owner;
+		parent::__construct($data, ArrayObject::STD_PROP_LIST);
+	}
 
-			if ($relation)
-			{
-				$this->relation = $relation;
-			}
+	public function owner(Hive $owner = NULL)
+	{
+		if ( ! $owner)
+		{
+			return $this->__owner;
 		}
+
+		$this->__owner = $owner;
+
+		return $this;
+	}
+
+	public function relation(Hive_Relation $relation = NULL)
+	{
+		if ( ! $relation)
+		{
+			return $this->__relation;
+		}
+
+		$this->__relation = $relation;
+
+		return $this;
 	}
 
 	public function values(array $values = NULL)
@@ -70,14 +109,14 @@ class Hive_Container implements ArrayAccess {
 	 */
 	public function as_array()
 	{
-		return $this->__data;
+		return $this->getArrayCopy();
 	}
 
 	public function changed()
 	{
 		$changed = array();
 
-		foreach ($this->__data as $key => $model)
+		foreach ($this as $key => $model)
 		{
 			if ($model->changed())
 			{
@@ -89,72 +128,19 @@ class Hive_Container implements ArrayAccess {
 		return $changed;
 	}
 
-	/**
-	 * Access for isset()
-	 *
-	 *     isset($container['foo']);
-	 *
-	 * @param   mixed    model identifier
-	 * @return  boolean
-	 */
-	public function offsetExists($key)
+	public function offsetSet($key, $model)
 	{
-		return isset($this->__data[$key]);
+		if (isset($this->__relation->parent) AND $this->__owner)
+		{
+			// Set the parent of the model this the owner of the collection
+			$model->{$this->__relation->parent} = $this->__owner;
+		}
+
+		return parent::offsetSet($key, $model);
 	}
 
 	/**
-	 * Access for getting
-	 *
-	 *     $foo = $container['foo'];
-	 *
-	 * [!!] Returns `NULL` if the specified offset does not yet exist.
-	 *
-	 * @param   string  model identifier
-	 * @return  Hive
-	 */
-	public function offsetGet($key)
-	{
-		if (isset($this->__data[$key]))
-		{
-			return $this->__data[$key];
-		}
-
-		return NULL;
-	}
-
-	/**
-	 * Access for setting
-	 *
-	 *     $container['foo'] = $foo;
-	 *
-	 * @param   string  identifier
-	 * @param   Hive    model
-	 * @return  void
-	 */
-	public function offsetSet($key, $value)
-	{
-		if ( ! isset($this->__data[$key]))
-		{
-			if ($this->owner AND $this->relation)
-			{
-				$value->{$this->relation->self} = $this->owner;
-			}
-
-			$this->__data[$key] = $value;
-		}
-		else
-		{
-			if ( ! is_array($value))
-			{
-				$value = $value->as_array();
-			}
-
-			$this->__data[$key]->values($value);
-		}
-	}
-
-	/**
-	 * Access for unset()
+	 * Store the removed element, so that it can be managed later.
 	 *
 	 *     unset($container['foo']);
 	 *
@@ -168,7 +154,8 @@ class Hive_Container implements ArrayAccess {
 			$this->__removed[$key] = $this[$key];
 		}
 
-		unset($this->__data[$key]);
+		return parent::offsetUnset($key);
 	}
+
 
 } // End Hive_Container

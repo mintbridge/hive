@@ -21,6 +21,11 @@ abstract class Hive_Relation {
 	public $using = array();
 
 	/**
+	 * @var  string  parent model relation name
+	 */
+	public $parent;
+
+	/**
 	 * Set relation options.
 	 *
 	 * @param   array  relation options
