@@ -743,6 +743,12 @@ abstract class Hive_Model {
 			}
 		}
 
+		if ($limit === 1 AND ! $this->changed())
+		{
+			// Nothing can be updated at this point
+			return $this;
+		}
+
 		// Apply modeling to the query
 		$query = $this->query_update($query, $limit);
 
@@ -799,6 +805,38 @@ abstract class Hive_Model {
 		// Model has been deleted, but leave current model data intact
 		// so that it can be accessed after deletion.
 		$this->deleted(TRUE);
+
+		return $this;
+	}
+
+	/**
+	 * Update or create the model depending on internal state.
+	 *
+	 *     // This can be replaced...
+	 *     if ($model->loaded()) $model->update();
+	 *     else $model->create();
+	 *
+	 *     // with a save call
+	 *     $model->save();
+	 *
+	 * [!!] Your model _must_ be loaded for this to work. A prepared but unloaded
+	 * model will trigger creation!
+	 *
+	 * @return  $this
+	 * @uses    Hive::loaded
+	 * @uses    Hive::create
+	 * @uses    Hive::update
+	 */
+	public function save()
+	{
+		if ($this->loaded())
+		{
+			$this->update();
+		}
+		else
+		{
+			$this->create();
+		}
 
 		return $this;
 	}
@@ -1028,7 +1066,7 @@ abstract class Hive_Model {
 			if ( ! $field instanceof Hive_Field_Auto)
 			{
 				// Add the value using the column name
-				$values[$meta->column($name)] = $this->$name;
+				$values[$meta->column($name)] = $this->__get($name);
 			}
 		}
 
