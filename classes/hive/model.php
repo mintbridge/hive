@@ -1123,6 +1123,9 @@ abstract class Hive_Model {
 			$query->limit($limit);
 		}
 
+		// Return results as instances of this model
+		$query->as_object(get_class($this));
+
 		return $query;
 	}
 
