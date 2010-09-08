@@ -21,6 +21,11 @@ abstract class Hive_Relation {
 	public $using = array();
 
 	/**
+	 * @var  array  extra conditions: field => value, ...
+	 */
+	public $conditions = array();
+
+	/**
 	 * @var  string  parent model relation name
 	 */
 	public $parent;

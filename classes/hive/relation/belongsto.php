@@ -24,6 +24,14 @@ class Hive_Relation_BelongsTo extends Hive_Relation {
 			}
 		}
 
+		if ($this->conditions)
+		{
+			foreach ($this->conditions as $name => $value)
+			{
+				$child->$name = $value;
+			}
+		}
+
 		return $child;
 	}
 
