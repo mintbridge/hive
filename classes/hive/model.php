@@ -580,7 +580,7 @@ abstract class Hive_Model {
 			return $this->__state['deleted'];
 		}
 
-		$this->__state['deleted'] = (bool) $value;
+		$this->__state['deleted'] = (bool) $state;
 
 		return $this;
 	}
