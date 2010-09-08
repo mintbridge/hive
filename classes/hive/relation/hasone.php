@@ -8,7 +8,7 @@
  * @copyright  (c) 2008-2010 Woody Gilk
  * @license    MIT
  */
-class Hive_Relation_BelongsTo extends Hive_Relation {
+class Hive_Relation_HasOne extends Hive_Relation {
 
 	public function read(Hive $parent)
 	{
@@ -35,4 +35,4 @@ class Hive_Relation_BelongsTo extends Hive_Relation {
 		return $child;
 	}
 
-} // End Hive_Relation_BelongsTo
+} // End Hive_Relation_HasOne
