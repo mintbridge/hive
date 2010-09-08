@@ -141,6 +141,11 @@ abstract class Hive_Model {
 	protected $__relations = array();
 
 	/**
+	 * @var  array  custom information
+	 */
+	protected $__info = array();
+
+	/**
 	 * Initializes model fields and loads meta data.
 	 *
 	 *     $model = new Model_Foo;
@@ -387,6 +392,44 @@ abstract class Hive_Model {
 	public function __toString()
 	{
 		return json_encode($this->as_array());
+	}
+
+	/**
+	 * Store any type of information within the model.
+	 *
+	 *     // Set model information
+	 *     $model->info('foo', $bar);
+	 *
+	 *     // Get model a single bit of information
+	 *     $bar = $model->info('foo');
+	 *
+	 *     // Get all model information
+	 *     $info = $model->info();
+	 *
+	 * [!!] Information stored here is not stored between requests!
+	 *
+	 * @param   string  info key
+	 * @param   midex   info value
+	 * @return  mixed
+	 */
+	public function info($key = NULL, $value = NULL)
+	{
+		$args = func_num_args();
+
+		if ($key === NULL)
+		{
+			return $this->__info;
+		}
+		elseif ($value === NULL)
+		{
+			return isset($this->__info[$key]) ? $this->__info[$key] : NULL;
+		}
+		else
+		{
+			$this->__info[$key] = $value;
+		}
+
+		return $this;
 	}
 
 	/**
