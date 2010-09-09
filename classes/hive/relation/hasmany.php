@@ -10,6 +10,8 @@
  */
 class Hive_Relation_HasMany extends Hive_Relation {
 
+	const SINGULAR = FALSE;
+
 	public function read(Hive $parent)
 	{
 		$container = Hive_Container::factory($parent, $this);

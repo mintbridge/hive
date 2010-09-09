@@ -11,6 +11,11 @@
 abstract class Hive_Relation {
 
 	/**
+	 * @var  boolean  singular relation?
+	 */
+	const SINGULAR = TRUE;
+
+	/**
 	 * @var  string  relation model name
 	 */
 	public $model = '';

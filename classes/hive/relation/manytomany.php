@@ -8,12 +8,50 @@
  * @copyright  (c) 2008-2009 Woody Gilk
  * @license    MIT
  */
-class Hive_Relation_HasAndBelongsToMany extends Hive_Relation {
+class Hive_Relation_ManyToMany extends Hive_Relation {
+
+	const SINGULAR = FALSE;
 
 	/**
 	 * @var  string  table name
 	 */
 	public $table = '';
+
+	public function as_array(Hive $parent)
+	{
+		$result = array();
+
+		if ($parent->prepared())
+		{
+			$child = Hive::factory($this->model);
+
+			list($id, $fk) = $this->field;
+
+			$query = DB::select(array($fk, $id))
+				->from($this->table)
+				->as_object(FALSE)
+				;
+
+			foreach ($this->using as $local => $remote)
+			{
+				$query->where("{$this->table}.{$remote}", '=', $parent->$local);
+			}
+
+			$result = $query
+				->execute(Hive::meta($parent)->db)
+				->as_array($id, $id);
+
+			$field = Hive::meta($child)->fields[$id];
+
+			foreach ($result as $value)
+			{
+				// Type cast the values
+				$result[$value] = $field->value($value);
+			}
+		}
+
+		return $result;
+	}
 
 	public function read(Hive $parent)
 	{
@@ -57,4 +95,16 @@ class Hive_Relation_HasAndBelongsToMany extends Hive_Relation {
 		return $container;
 	}
 
-} // End Hive_Relation_HasAndBelongsToMany
+	public function value(array $value)
+	{
+		if ($value)
+		{
+			$value = array_combine($value, $value);
+
+			ksort($value);
+		}
+
+		return $value;
+	}
+
+} // End Hive_Relation_ManyToMany
