@@ -1229,7 +1229,7 @@ abstract class Hive_Model {
 	 * @param   mixed   number of records to delete, FALSE for all
 	 * @return  Database_Query_Builder_Delete
 	 */
-	public function query_delete(Database_Query_Builder_Delete $query, $limit = NULL)
+	public function query_delete(Database_Query_Builder_Delete $query = NULL, $limit = NULL)
 	{
 		if ( ! $query)
 		{
