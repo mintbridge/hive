@@ -999,7 +999,7 @@ abstract class Hive_Model {
 				if (isset($context[$field]['label']))
 				{
 					// Apply the label for this field in this context
-					$data->label($field, $context['field']['label']);
+					$data->label($field, $context[$field]['label']);
 				}
 
 				if (isset($context[$field]['filters']))
