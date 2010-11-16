@@ -446,7 +446,7 @@ abstract class Hive_Model {
 		$meta = static::meta($this);
 
 		// Get a list of model fields
-		$fields = array_keys($meta->fields);
+		$fields = array_merge(array_keys($meta->fields), array_keys($meta->aliases));
 
 		$array = array();
 
