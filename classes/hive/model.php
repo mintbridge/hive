@@ -202,7 +202,7 @@ abstract class Hive_Model {
 			$alias = $meta->aliases[$name];
 
 			// Call aliases, passing the model through
-			return $alias($this);
+			return $alias($this, $meta);
 		}
 
 		if (isset($meta->relations[$name]))
