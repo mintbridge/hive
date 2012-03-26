@@ -17,7 +17,7 @@ abstract class Hive_Model {
 
 	public static function factory($name, array $values = NULL)
 	{
-		$model = "Model_{$name}";
+		$model = "Model_".ucfirst($name);
 
 		$model = new $model;
 
