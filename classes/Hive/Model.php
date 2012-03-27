@@ -60,11 +60,8 @@ abstract class Hive_Model {
 		else
 		{
 			// Convert the model name to a class name
-			$model = "model_{$model}";
+			$model = "Model_".ucfirst($name);
 		}
-
-		// Normalize to prevent duplicates
-		$model = strtolower($model);
 
 		if ( ! isset(Hive::$meta[$model]))
 		{
@@ -157,7 +154,7 @@ abstract class Hive_Model {
 		if ( ! $this->__model)
 		{
 			// Set the name of this model, removing the "Model_" prefix
-			$this->__model = strtolower(substr(get_class($this), 6));
+			$this->__model = substr(get_class($this), 6);
 		}
 
 		if ($this->loading())
