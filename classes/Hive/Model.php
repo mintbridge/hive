@@ -60,7 +60,7 @@ abstract class Hive_Model {
 		else
 		{
 			// Convert the model name to a class name
-			$model = "Model_".ucfirst($name);
+			$model = "Model_".ucfirst($model);
 		}
 
 		if ( ! isset(Hive::$meta[$model]))
